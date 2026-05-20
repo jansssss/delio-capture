@@ -3,319 +3,329 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>델리오 거래내역 캡처 도구</title>
+<title>델리오 거래내역 저장 도구</title>
 <style>
-  :root {
-    --blue: #2d6cdf;
-    --dark: #1a1a2e;
-    --light: #f4f6fb;
-    --border: #dde2f0;
-    --green: #27ae60;
-    --red: #e74c3c;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--light);
-    color: #222;
-    line-height: 1.6;
-  }
-  header {
-    background: var(--dark);
-    color: white;
-    padding: 48px 24px 40px;
-    text-align: center;
-  }
-  header h1 { font-size: 2rem; margin-bottom: 10px; }
-  header p { font-size: 1.05rem; color: #aab; max-width: 560px; margin: 0 auto; }
-  .badge {
-    display: inline-block;
-    background: rgba(255,255,255,.12);
-    border: 1px solid rgba(255,255,255,.2);
-    border-radius: 20px;
-    padding: 4px 14px;
-    font-size: .8rem;
-    margin-bottom: 16px;
-    color: #ccd;
-  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  main { max-width: 800px; margin: 0 auto; padding: 40px 20px 80px; }
+body {
+  font-family: '맑은 고딕', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  font-size: 18px;
+  line-height: 1.7;
+  background: #f0f4ff;
+  color: #111;
+}
 
-  .card {
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 28px;
-    margin-bottom: 28px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  }
-  .card-title {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 1.2rem; font-weight: 700;
-    margin-bottom: 18px; color: var(--dark);
-  }
-  .card-title .icon {
-    width: 36px; height: 36px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .icon-blue { background: #e8f0fd; }
-  .icon-gray  { background: #f0f0f0; }
+/* ── 헤더 ── */
+.hero {
+  background: linear-gradient(135deg, #1a3a8f 0%, #1a56db 100%);
+  color: white;
+  text-align: center;
+  padding: 52px 24px 44px;
+}
+.hero h1 { font-size: 2.4rem; font-weight: 800; margin-bottom: 12px; }
+.hero p  { font-size: 1.2rem; opacity: .88; max-width: 520px; margin: 0 auto; }
 
-  .step {
-    display: flex; gap: 14px;
-    margin-bottom: 16px;
-  }
-  .step-num {
-    flex-shrink: 0;
-    width: 28px; height: 28px; border-radius: 50%;
-    background: var(--blue); color: white;
-    font-size: .85rem; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
-    margin-top: 2px;
-  }
-  .step-body { flex: 1; }
-  .step-body strong { display: block; margin-bottom: 3px; }
-  .step-body p, .step-body small { color: #555; font-size: .92rem; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 36px 20px 80px; }
 
-  /* Bookmarklet drag button */
-  .bm-wrap {
-    background: var(--light);
-    border: 2px dashed var(--border);
-    border-radius: 10px;
-    padding: 22px;
-    text-align: center;
-    margin: 18px 0;
-  }
-  .bm-wrap p { font-size: .88rem; color: #777; margin-bottom: 14px; }
-  .bm-btn {
-    display: inline-block;
-    padding: 12px 24px;
-    background: var(--blue);
-    color: white !important;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: grab;
-    box-shadow: 0 3px 10px rgba(45,108,223,.35);
-    user-select: none;
-    transition: transform .15s, box-shadow .15s;
-  }
-  .bm-btn:hover {
-    transform: scale(1.03);
-    box-shadow: 0 5px 16px rgba(45,108,223,.45);
-  }
-  .bm-note {
-    font-size: .8rem; color: #999; margin-top: 10px;
-  }
+.card {
+  background: white;
+  border-radius: 18px;
+  padding: 32px 28px;
+  margin-bottom: 28px;
+  box-shadow: 0 4px 18px rgba(0,0,0,.08);
+}
 
-  .tag {
-    display: inline-block;
-    background: #e8f0fd;
-    color: var(--blue);
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: .8rem;
-    font-weight: 600;
-    margin-right: 4px;
-  }
-  .tag-green { background: #e8f8ee; color: var(--green); }
-  .tag-gray  { background: #f0f0f0; color: #666; }
+.section-label {
+  display: inline-block;
+  background: #1a56db; color: white;
+  font-size: 13px; font-weight: 700;
+  padding: 4px 14px; border-radius: 20px;
+  margin-bottom: 12px; letter-spacing: .5px;
+}
+.section-label.gray  { background: #6b7280; }
+.section-label.green { background: #059669; }
 
-  code {
-    background: #f0f0f0;
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: .88em;
-    font-family: 'Consolas', monospace;
-  }
-  pre {
-    background: #1e1e2e;
-    color: #cdd6f4;
-    border-radius: 8px;
-    padding: 16px;
-    font-size: .85rem;
-    overflow-x: auto;
-    line-height: 1.7;
-    margin: 12px 0;
-  }
+.card-title {
+  font-size: 1.55rem; font-weight: 800;
+  margin-bottom: 20px; color: #111; line-height: 1.35;
+}
 
-  .faq-item { margin-bottom: 16px; }
-  .faq-item summary {
-    cursor: pointer;
-    font-weight: 600;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    list-style: none;
-  }
-  .faq-item summary::before { content: '▶  '; font-size: .8em; color: var(--blue); }
-  .faq-item[open] summary::before { content: '▼  '; }
-  .faq-item p { padding: 10px 0 4px; color: #555; font-size: .93rem; }
+.step { display: flex; gap: 18px; margin-bottom: 24px; align-items: flex-start; }
+.step:last-child { margin-bottom: 0; }
 
-  .warn {
-    background: #fff8e1;
-    border-left: 4px solid #f59e0b;
-    border-radius: 0 6px 6px 0;
-    padding: 12px 16px;
-    font-size: .9rem;
-    color: #7a5c00;
-    margin: 14px 0;
-  }
+.step-num {
+  flex-shrink: 0;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: #1a56db; color: white;
+  font-size: 1.3rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
 
-  footer {
-    text-align: center;
-    padding: 32px 20px;
-    color: #aaa;
-    font-size: .85rem;
-    border-top: 1px solid var(--border);
-  }
-  footer a { color: var(--blue); text-decoration: none; }
+.step-body { flex: 1; }
+.step-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; color: #111; }
+.step-desc  { color: #444; font-size: 1rem; line-height: 1.65; }
+
+/* 드래그 영역 */
+.drag-area {
+  background: #eef3ff;
+  border: 3px dashed #93b4f8;
+  border-radius: 14px;
+  padding: 28px 20px; text-align: center; margin: 16px 0;
+}
+.drag-hint { font-size: 1rem; color: #1a56db; font-weight: 600; margin-bottom: 16px; }
+.drag-row  { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+.bm-btn {
+  display: inline-block;
+  padding: 14px 28px;
+  background: #1a56db; color: white !important;
+  border-radius: 10px; font-size: 1.15rem; font-weight: 800;
+  text-decoration: none; cursor: grab;
+  box-shadow: 0 4px 14px rgba(26,86,219,.4);
+  user-select: none; white-space: nowrap;
+  transition: transform .15s;
+}
+.bm-btn:hover { transform: scale(1.04); }
+
+.drag-arrow { font-size: 2rem; animation: bounce 1s ease-in-out infinite; color: #1a56db; }
+@keyframes bounce { 0%,100%{transform:translateX(0)} 50%{transform:translateX(8px)} }
+
+.bar-mock {
+  background: #d1d5db; border-radius: 8px;
+  padding: 10px 20px; font-size: .9rem;
+  color: #374151; font-weight: 700; white-space: nowrap;
+}
+
+.tip {
+  background: #fffbeb; border-left: 5px solid #f59e0b;
+  border-radius: 0 10px 10px 0; padding: 14px 18px;
+  font-size: .95rem; color: #78350f; margin: 14px 0; line-height: 1.6;
+}
+.tip strong { display: block; margin-bottom: 4px; font-size: 1rem; }
+
+.info {
+  background: #eff6ff; border-left: 5px solid #1a56db;
+  border-radius: 0 10px 10px 0; padding: 14px 18px;
+  font-size: .95rem; color: #1e3a8a; margin: 14px 0; line-height: 1.6;
+}
+
+.big-btn {
+  display: block; width: 100%; padding: 18px;
+  font-size: 1.4rem; font-weight: 800;
+  border: none; border-radius: 12px;
+  cursor: pointer; text-align: center; text-decoration: none;
+  transition: opacity .15s, transform .15s; margin: 10px 0;
+}
+.big-btn:hover { opacity: .9; transform: scale(1.01); }
+.btn-blue { background: #1a56db; color: white; }
+.btn-gray { background: #6b7280; color: white; font-size: 1rem; padding: 12px; }
+
+.divider { border: none; border-top: 2px dashed #d1d5db; margin: 20px 0; }
+
+kbd {
+  display: inline-block; background: #e5e7eb;
+  border: 1px solid #9ca3af; border-radius: 5px;
+  padding: 2px 8px; font-family: monospace;
+  font-size: .95em; font-weight: 700; color: #111;
+}
+
+.chrome-step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+.chrome-num {
+  flex-shrink: 0; background: #f3f4f6; border: 2px solid #d1d5db;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: .95rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; color: #374151;
+}
+.chrome-step p { color: #333; font-size: 1rem; line-height: 1.55; margin-top: 3px; }
+
+details { border-bottom: 1px solid #e5e7eb; padding: 4px 0; }
+details:last-child { border-bottom: none; }
+summary {
+  cursor: pointer; font-size: 1.05rem; font-weight: 700;
+  padding: 14px 0; color: #111; list-style: none;
+  display: flex; align-items: center; gap: 10px;
+}
+summary::before { content: '▶'; font-size: .8em; color: #1a56db; flex-shrink: 0; }
+details[open] summary::before { content: '▼'; }
+details p { padding: 0 0 16px 28px; color: #444; font-size: 1rem; line-height: 1.65; }
+
+footer { text-align: center; padding: 28px; color: #9ca3af; font-size: .9rem; }
+footer a { color: #1a56db; text-decoration: none; }
+
+@media (max-width: 500px) {
+  .hero h1 { font-size: 1.7rem; }
+  .drag-row { flex-direction: column; }
+}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="badge">🪙 델리오(Delio) 전용 도구</div>
-  <h1>📸 거래내역 캡처 도구</h1>
-  <p>델리오 거래내역 전 페이지를 자동 캡처하여 <strong>ZIP 파일</strong>로 다운로드합니다.</p>
-</header>
+<div class="hero">
+  <h1>📸 델리오 거래내역 저장</h1>
+  <p>클릭 몇 번으로 전체 거래내역을<br>자동으로 저장해드립니다</p>
+</div>
 
-<main>
+<div class="wrap">
 
-  <!-- ── 방법 1: 북마클릿 ─────────────────────────────────────────── -->
+  <!-- ① 처음 한 번만 -->
   <div class="card">
-    <div class="card-title">
-      <span class="icon icon-blue">🔖</span>
-      방법 1 &nbsp;<span class="tag tag-green">추천</span>&nbsp; 브라우저 북마클릿
-    </div>
+    <span class="section-label">⚙️ 처음 한 번만</span>
+    <div class="card-title">먼저 이것만 해주세요<br><span style="font-weight:500;font-size:1.1rem;color:#555">한 번 해두면 다음부터는 바로 사용할 수 있어요</span></div>
 
-    <p style="margin-bottom:20px;color:#555;font-size:.95rem;">
-      Python 설치 불필요. 북마크 하나만 저장하면 클릭 한 번으로 캡처합니다.
-    </p>
-
-    <!-- Step 1: 드래그 -->
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-body">
-        <strong>아래 버튼을 북마크바로 드래그하세요</strong>
-        <div class="bm-wrap">
-          <p>아래 버튼을 브라우저 북마크바(즐겨찾기 바)로 끌어다 놓으세요</p>
-          <!-- Bookmarklet — minified inline JS -->
-          <a class="bm-btn" id="bm-link" href="javascript:(function(){'use strict';var BASE='https://deliobt.kr/transaction',UI='delio-capture-ui';if(!location.href.includes('deliobt.kr')){alert('델리오(deliobt.kr) 거래내역 페이지에서 실행해주세요.');return;}if(document.getElementById(UI))return;var cancelled=false;function createUI(){var el=document.createElement('div');el.id=UI;el.style.cssText='position:fixed;top:20px;right:20px;width:320px;background:#fff;border:2px solid #2d6cdf;border-radius:10px;padding:18px;z-index:2147483647;font-family:sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25);';el.innerHTML='<div style=&quot;font-weight:700;font-size:15px;margin-bottom:10px;color:#2d6cdf&quot;>&#128247; 델리오 캡처 도구</div><div id=&quot;dc-status&quot; style=&quot;font-size:13px;color:#444;margin-bottom:10px;min-height:36px&quot;>초기화 중...</div><div id=&quot;dc-bar-wrap&quot; style=&quot;display:none;margin-bottom:10px&quot;><div style=&quot;background:#eee;border-radius:4px;height:8px;overflow:hidden&quot;><div id=&quot;dc-bar&quot; style=&quot;background:#2d6cdf;height:8px;width:0%;transition:width .3s&quot;></div></div><div id=&quot;dc-bar-label&quot; style=&quot;text-align:center;font-size:11px;color:#888;margin-top:3px&quot;></div></div><button id=&quot;dc-close&quot; style=&quot;width:100%;padding:7px;background:#888;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px&quot;>취소 / 닫기</button>';document.body.appendChild(el);document.getElementById('dc-close').onclick=function(){cancelled=true;el.remove();};return{status:function(t){document.getElementById('dc-status').textContent=t;},progress:function(c,tot){var w=document.getElementById('dc-bar-wrap');w.style.display='block';var p=Math.round(c/tot*100);document.getElementById('dc-bar').style.width=p+'%';document.getElementById('dc-bar-label').textContent=c+' / '+tot+' 페이지 ('+p+'%)';},done:function(m){document.getElementById('dc-status').textContent=m;document.getElementById('dc-close').textContent='닫기';}};}function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('로드 실패: '+src));};document.head.appendChild(s);});}function getTotalPages(doc){var walker=document.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);var node;while((node=walker.nextNode())){var m=node.textContent.match(/총\s*([\d,]+)\s*건/);if(m)return Math.ceil(parseInt(m[1].replace(/,/g,''),10)/10);}var max=0;doc.querySelectorAll('button,a').forEach(function(el){var n=parseInt(el.textContent.trim(),10);if(!isNaN(n)&&n>max)max=n;});return max>0?max:null;}async function run(){var ui=createUI();try{ui.status('라이브러리 로딩 중...');if(!window.html2canvas)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');if(!window.JSZip)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');var params=new URLSearchParams(location.search);var coin=params.get('coinType')||'ETH';ui.status('페이지 수 확인 중...');await new Promise(function(r){setTimeout(r,800);});var total=getTotalPages(document);if(!total){total=parseInt(prompt('페이지 수를 확인할 수 없습니다.\n총 몇 페이지인지 입력하세요:','10')||'10',10);}ui.status('총 '+total+'페이지 캡처 시작...');ui.progress(0,total);var zip=new JSZip();var folder=zip.folder(coin+'_captures');var iframe=document.createElement('iframe');iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1440px;height:900px;border:none;';document.body.appendChild(iframe);for(var pg=0;pg<total;pg++){if(cancelled)break;ui.status((pg+1)+' / '+total+' 페이지 로딩 중...');await new Promise(function(resolve){iframe.onload=resolve;iframe.src=BASE+'?coinType='+coin+'&page='+pg;});await new Promise(function(resolve){var t0=Date.now();(function check(){try{if(iframe.contentDocument.querySelector('table'))return resolve();}catch(e){return resolve();}if(Date.now()-t0>10000)return resolve();setTimeout(check,300);})();});await new Promise(function(r){setTimeout(r,800);});ui.status((pg+1)+' / '+total+' 페이지 캡처 중...');var canvas=await html2canvas(iframe.contentDocument.body,{useCORS:true,scale:1,logging:false,width:1440,windowWidth:1440});var blob=await new Promise(function(r){canvas.toBlob(r,'image/png');});var buf=await blob.arrayBuffer();folder.file(coin+'_page_'+String(pg+1).padStart(3,'0')+'.png',buf);ui.progress(pg+1,total);}iframe.remove();if(cancelled){ui.done('취소되었습니다.');return;}ui.status('ZIP 생성 중...');var zipBlob=await zip.generateAsync({type:'blob'});var url=URL.createObjectURL(zipBlob);var a=document.createElement('a');a.href=url;a.download='delio_'+coin+'_'+new Date().toISOString().slice(0,10)+'.zip';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);ui.done('완료! ZIP 파일 다운로드 ✓');}catch(err){console.error('[Delio Capture]',err);ui.done('오류: '+err.message);}}run();})();">📸 델리오 캡처</a>
-          <div class="bm-note">북마크바가 안 보이면: Chrome → Ctrl+Shift+B / Firefox → Ctrl+B</div>
+        <div class="step-title">아래 버튼을 즐겨찾기 바로 끌어다 놓으세요</div>
+        <div class="drag-area">
+          <div class="drag-hint">📌 이 버튼을 마우스로 잡고 위쪽 즐겨찾기 바에 올려놓으세요</div>
+          <div class="drag-row">
+            <a class="bm-btn" href="javascript:(function(){'use strict';var B='https://deliobt.kr/transaction',UI='delio-capture-ui';if(!location.href.includes('deliobt.kr')){alert('델리오(deliobt.kr) 거래내역 페이지에서 실행해주세요.');return;}if(document.getElementById(UI))return;var cancelled=false;function mkUI(){var el=document.createElement('div');el.id=UI;el.style.cssText='position:fixed;top:16px;right:16px;width:300px;background:#fff;border:3px solid #1a56db;border-radius:14px;padding:20px;z-index:2147483647;font-family:sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.3);';el.innerHTML='<div style=&quot;font-size:18px;font-weight:700;color:#1a56db;margin-bottom:12px&quot;>📸 캡처 진행 중</div><div id=&quot;dc-s&quot; style=&quot;font-size:16px;color:#222;margin-bottom:14px;line-height:1.5&quot;>준비 중...</div><div id=&quot;dc-bw&quot; style=&quot;display:none;margin-bottom:14px&quot;><div style=&quot;background:#e5e7eb;border-radius:8px;height:12px;overflow:hidden&quot;><div id=&quot;dc-b&quot; style=&quot;background:#1a56db;height:12px;width:0%;transition:width .4s;border-radius:8px&quot;></div></div><div id=&quot;dc-l&quot; style=&quot;text-align:center;font-size:14px;color:#555;margin-top:6px&quot;></div></div><button id=&quot;dc-x&quot; style=&quot;width:100%;padding:10px;background:#6b7280;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:600&quot;>취소</button>';document.body.appendChild(el);document.getElementById('dc-x').onclick=function(){cancelled=true;el.remove();};return{s:function(t){document.getElementById('dc-s').innerHTML=t;},p:function(c,tot){document.getElementById('dc-bw').style.display='block';var p=Math.round(c/tot*100);document.getElementById('dc-b').style.width=p+'%';document.getElementById('dc-l').textContent=c+' / '+tot+' 페이지 ('+p+'%)';},d:function(m){document.getElementById('dc-s').innerHTML=m;document.getElementById('dc-x').textContent='닫기';}};}function ld(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error('로드실패:'+src));};document.head.appendChild(s);});}function gp(doc){var w=document.createTreeWalker(doc.body,NodeFilter.SHOW_TEXT);var n;while((n=w.nextNode())){var m=n.textContent.match(/총\s*([\d,]+)\s*건/);if(m)return Math.ceil(parseInt(m[1].replace(/,/g,''),10)/10);}var mx=0;doc.querySelectorAll('button,a').forEach(function(e){var v=parseInt(e.textContent.trim(),10);if(!isNaN(v)&&v>mx)mx=v;});return mx>0?mx:null;}async function sv(blob,coin){var fn='delio_'+coin+'_'+new Date().toISOString().slice(0,10)+'.zip';if(window.showSaveFilePicker){try{var h=await window.showSaveFilePicker({suggestedName:fn,startIn:'desktop',types:[{description:'ZIP',accept:{'application/zip':['.zip']}}]});var w=await h.createWritable();await w.write(blob);await w.close();return true;}catch(e){if(e.name==='AbortError')return false;}}var u=URL.createObjectURL(blob);var a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(u);return true;}async function run(){var ui=mkUI();try{ui.s('라이브러리 불러오는 중...');if(!window.html2canvas)await ld('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');if(!window.JSZip)await ld('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');var coin=(new URLSearchParams(location.search)).get('coinType')||'ETH';ui.s('페이지 수 확인 중...');await new Promise(function(r){setTimeout(r,800);});var tot=gp(document);if(!tot){tot=parseInt(prompt('페이지 수를 확인하지 못했습니다.\n총 몇 페이지인지 숫자만 입력해 주세요.','10')||'10',10);}ui.s('총 <b>'+tot+'페이지</b> 캡처 시작!<br><small>잠시 기다려 주세요</small>');ui.p(0,tot);var zip=new JSZip(),folder=zip.folder(coin+'_captures');var fr=document.createElement('iframe');fr.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1440px;height:900px;border:none;';document.body.appendChild(fr);for(var pg=0;pg<tot;pg++){if(cancelled)break;ui.s((pg+1)+'번째 페이지 캡처 중...<br><small>창을 닫지 마세요!</small>');await new Promise(function(rv){fr.onload=rv;fr.src=B+'?coinType='+coin+'&page='+pg;});await new Promise(function(rv){var t0=Date.now();(function ck(){try{if(fr.contentDocument.querySelector('table'))return rv();}catch(e){return rv();}if(Date.now()-t0>10000)return rv();setTimeout(ck,300);})();});await new Promise(function(r){setTimeout(r,900);});var cv=await html2canvas(fr.contentDocument.body,{useCORS:true,scale:1,logging:false,width:1440,windowWidth:1440});var bl=await new Promise(function(r){cv.toBlob(r,'image/png');});folder.file(coin+'_page_'+String(pg+1).padStart(3,'0')+'.png',await bl.arrayBuffer());ui.p(pg+1,tot);}fr.remove();if(cancelled){ui.d('취소되었습니다.');return;}ui.s('파일 저장 중...');var zb=await zip.generateAsync({type:'blob'});var ok=await sv(zb,coin);ui.d(ok?'✅ 완료! 바탕화면에 <b>'+coin+' 파일</b>이 저장되었습니다.':'저장이 취소되었습니다.');}catch(err){console.error(err);ui.d('⚠️ 오류: '+err.message);}}run();})();">📸 델리오 캡처</a>
+            <span class="drag-arrow">→</span>
+            <div class="bar-mock">🔖 즐겨찾기 바</div>
+          </div>
+        </div>
+        <div class="tip">
+          <strong>📌 즐겨찾기 바가 안 보인다면?</strong>
+          키보드에서 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd> 를 동시에 눌러보세요.<br>
+          (Mac은 <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>)
         </div>
       </div>
     </div>
 
-    <!-- Step 2 -->
+    <hr class="divider">
+
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-body">
-        <strong>델리오에 로그인하고 거래내역 페이지로 이동</strong>
-        <p>URL: <code>https://deliobt.kr/transaction</code></p>
-      </div>
-    </div>
+        <div class="step-title">파일이 바탕화면에 저장되도록 설정하세요</div>
+        <div class="step-desc" style="margin-bottom:14px">크롬 브라우저 기준입니다</div>
 
-    <!-- Step 3 -->
-    <div class="step">
-      <div class="step-num">3</div>
-      <div class="step-body">
-        <strong>코인 종류를 선택한 뒤 북마클릿 클릭</strong>
-        <p>오른쪽 상단에 진행 창이 나타나고 전 페이지를 자동으로 캡처합니다.</p>
-      </div>
-    </div>
+        <div class="chrome-step"><div class="chrome-num">①</div><p>아래 버튼을 눌러 크롬 설정을 여세요</p></div>
+        <a class="big-btn btn-gray" href="chrome://settings/downloads" target="_blank">⚙️ 크롬 다운로드 설정 열기</a>
 
-    <!-- Step 4 -->
-    <div class="step">
-      <div class="step-num">4</div>
-      <div class="step-body">
-        <strong>완료되면 ZIP 파일이 자동 다운로드</strong>
-        <p>파일명: <code>delio_ETH_2025-01-15.zip</code> 형태로 저장됩니다.</p>
-      </div>
-    </div>
+        <div class="chrome-step" style="margin-top:12px"><div class="chrome-num">②</div><p><b>위치</b> 항목 오른쪽의 <b>[변경]</b> 버튼을 클릭하세요</p></div>
+        <div class="chrome-step"><div class="chrome-num">③</div><p>폴더 선택 창에서 <b>바탕화면</b>을 선택하고 <b>[폴더 선택]</b>을 누르세요</p></div>
+        <div class="chrome-step"><div class="chrome-num">④</div><p><b>다운로드 전에 저장 위치 확인</b> 옵션은 <b>끔</b>으로 설정하세요</p></div>
 
-    <div class="warn">
-      ⚠️ 캡처 중 브라우저 탭을 닫거나 페이지를 이동하지 마세요. 완료될 때까지 기다려주세요.
+        <div class="info">💡 이 설정을 하면 앞으로 파일이 항상 바탕화면에 저장됩니다.</div>
+      </div>
     </div>
   </div>
 
-  <!-- ── 방법 2: Python ────────────────────────────────────────────── -->
+
+  <!-- ② 매번 사용법 -->
   <div class="card">
-    <div class="card-title">
-      <span class="icon icon-gray">🐍</span>
-      방법 2 &nbsp;<span class="tag tag-gray">고급</span>&nbsp; Python 스크립트
-    </div>
-    <p style="color:#555;font-size:.93rem;margin-bottom:16px;">
-      북마클릿이 작동하지 않는 경우 Python 스크립트를 사용하세요. 캡처 품질이 더 정확합니다.
-    </p>
+    <span class="section-label green">▶ 매번 사용법</span>
+    <div class="card-title">준비가 끝났다면<br>이렇게 사용하세요!</div>
 
     <div class="step">
       <div class="step-num">1</div>
       <div class="step-body">
-        <strong>Python 3 설치</strong>
-        <p><a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a>에서 다운로드 후 설치 (PATH 체크 필수)</p>
+        <div class="step-title">아래 버튼을 눌러 델리오를 여세요</div>
+        <a class="big-btn btn-blue" href="https://deliobt.kr/transaction" target="_blank">🚀 델리오 거래내역 열기</a>
       </div>
     </div>
+
     <div class="step">
       <div class="step-num">2</div>
       <div class="step-body">
-        <strong>의존성 설치 (최초 1회)</strong>
-        <pre>pip install playwright
-python -m playwright install chromium</pre>
+        <div class="step-title">델리오에 로그인하세요</div>
+        <div class="step-desc">아이디와 비밀번호를 입력하고 로그인하세요.<br>이미 로그인 되어 있다면 바로 다음 단계로!</div>
       </div>
     </div>
+
     <div class="step">
       <div class="step-num">3</div>
       <div class="step-body">
-        <strong>스크립트 다운로드 &amp; 실행</strong>
-        <pre>python capture_delio.py</pre>
-        <small>브라우저가 열리면 로그인 → 자동 캡처 시작</small>
+        <div class="step-title">저장할 코인을 선택하세요</div>
+        <div class="step-desc">거래내역 페이지에서 코인 종류를 선택하면<br>해당 코인의 거래내역이 나타납니다.</div>
       </div>
     </div>
 
-    <p style="margin-top:16px;font-size:.9rem;color:#666;">
-      📥 <a href="https://github.com/jansssss/delio-capture" target="_blank" rel="noopener">GitHub 저장소</a>에서 파일 다운로드 (README 참고)
-    </p>
-  </div>
-
-  <!-- ── FAQ ──────────────────────────────────────────────────────── -->
-  <div class="card">
-    <div class="card-title">
-      <span class="icon icon-blue">❓</span>
-      자주 묻는 질문
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <div class="step-title">즐겨찾기 바에서 📸 버튼을 클릭하세요</div>
+        <div class="step-desc">브라우저 위쪽 즐겨찾기 바에 있는<br><b>📸 델리오 캡처</b> 버튼을 클릭하세요.</div>
+        <div class="info" style="margin-top:12px">
+          ▶ 오른쪽 위에 파란색 진행 창이 나타나면 정상입니다.<br>
+          파란 바가 100%가 될 때까지 <b>창을 닫지 마세요!</b>
+        </div>
+      </div>
     </div>
 
-    <details class="faq-item">
-      <summary>북마클릿 클릭 후 아무것도 안 나타납니다</summary>
-      <p>델리오(deliobt.kr) 거래내역 페이지에서 실행했는지 확인하세요. 또한 일부 브라우저에서 보안 정책(CSP)으로 인해 외부 라이브러리 로딩이 차단될 수 있습니다. 이 경우 Python 스크립트(방법 2)를 사용하세요.</p>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <div class="step-title">파일 저장 창이 열리면 저장을 누르세요</div>
+        <div class="step-desc">저장 창이 열리면 바탕화면이 선택되어 있을 거예요.<br><b>[저장]</b> 버튼만 누르면 완료입니다!</div>
+        <div class="tip" style="margin-top:12px">
+          <strong>📁 파일이 어디 있는지 모르겠다면?</strong>
+          바탕화면(컴퓨터 배경화면)을 보세요.<br>
+          <b>delio_ETH_날짜.zip</b> 이라는 파일이 있을 거예요.<br>
+          더블클릭하면 안에 사진 파일들이 들어있습니다.
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ③ 도움말 -->
+  <div class="card">
+    <span class="section-label gray">❓ 도움말</span>
+    <div class="card-title" style="margin-bottom:8px">잘 안 되나요?</div>
+
+    <details>
+      <summary>📸 버튼을 눌렀는데 아무것도 안 나타나요</summary>
+      <p>델리오(deliobt.kr) 거래내역 페이지에서 눌렀는지 확인해 주세요.<br>
+      다른 사이트에서 누르면 작동하지 않습니다.<br><br>
+      그래도 안 된다면 페이지를 새로고침(<kbd>F5</kbd>) 후 다시 시도해 보세요.</p>
     </details>
 
-    <details class="faq-item">
-      <summary>페이지 수가 잘못 감지됩니다</summary>
-      <p>팝업창에서 직접 페이지 수를 입력할 수 있습니다. 델리오 화면에서 총 건수를 확인한 뒤 10으로 나눈 값을 입력하세요 (예: 53건 → 6페이지).</p>
+    <details>
+      <summary>즐겨찾기 바에 버튼이 없어요</summary>
+      <p><b>[처음 한 번만]</b> 섹션의 준비 1번을 다시 해주세요.<br>
+      <b>📸 델리오 캡처</b> 버튼을 마우스로 꾹 잡고 브라우저 위쪽으로 끌어다 놓으면 됩니다.<br><br>
+      즐겨찾기 바가 안 보인다면 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> 를 눌러서 켜주세요.</p>
     </details>
 
-    <details class="faq-item">
-      <summary>캡처된 이미지가 빈 화면입니다</summary>
-      <p>html2canvas 라이브러리의 제한으로 일부 요소가 캡처되지 않을 수 있습니다. 이 경우 Python 스크립트가 더 정확한 결과를 제공합니다.</p>
+    <details>
+      <summary>파일이 어디 저장됐는지 모르겠어요</summary>
+      <p>바탕화면(컴퓨터 배경화면)을 확인하세요.<br>
+      <b>delio_ETH_2025-05-20.zip</b> 처럼 생긴 파일이 있을 거예요.<br><br>
+      못 찾겠다면 크롬에서 <kbd>Ctrl</kbd>+<kbd>J</kbd> 를 누르면<br>
+      최근 다운로드 목록에서 바로 찾을 수 있습니다.</p>
     </details>
 
-    <details class="faq-item">
-      <summary>어떤 코인을 지원하나요?</summary>
-      <p>URL의 <code>coinType</code> 파라미터에 맞게 자동으로 캡처합니다. 거래내역 페이지에서 ETH, BTC, USDT 등 원하는 코인을 선택한 뒤 북마클릿을 클릭하세요.</p>
+    <details>
+      <summary>zip 파일이 뭔가요? 어떻게 열어요?</summary>
+      <p>zip 파일은 여러 사진을 하나로 묶은 파일입니다.<br>
+      파일을 <b>더블클릭</b>하면 안에 사진들이 보입니다.<br><br>
+      Windows에서는 파일을 오른쪽 클릭 →<b>압축 풀기</b>를 누르면<br>
+      사진 파일들이 폴더에 펼쳐집니다.</p>
     </details>
 
-    <details class="faq-item">
-      <summary>개인정보는 어디에 저장되나요?</summary>
-      <p>이 도구는 서버가 없는 순수 브라우저 도구입니다. 모든 처리는 <strong>내 컴퓨터에서만</strong> 이루어지며, 캡처 데이터가 외부로 전송되지 않습니다.</p>
+    <details>
+      <summary>캡처 중에 화면이 이상하게 움직여요</summary>
+      <p>정상입니다! 숨겨진 창에서 페이지를 하나씩 열면서 사진을 찍고 있는 거예요.<br>
+      오른쪽 위 파란색 진행 창이 <b>완료!</b> 라고 뜰 때까지 기다려 주세요.</p>
+    </details>
+
+    <details>
+      <summary>캡처가 너무 오래 걸려요</summary>
+      <p>페이지가 많을수록 시간이 오래 걸립니다.<br>
+      1페이지당 약 3~5초 정도 소요됩니다.<br>
+      예) 20페이지라면 약 1~2분 소요.<br><br>
+      인터넷이 느린 경우 더 걸릴 수 있습니다. 그냥 기다려 주세요!</p>
     </details>
   </div>
 
-</main>
+</div>
 
 <footer>
-  <p>오픈소스 &middot; <a href="https://github.com/jansssss/delio-capture" target="_blank" rel="noopener">GitHub 저장소</a> &middot; 개인 데이터 보호 &mdash; 서버 없음</p>
+  <p>개인 데이터는 외부로 전송되지 않습니다 &nbsp;|&nbsp;
+  <a href="https://github.com/jansssss/delio-capture" target="_blank" rel="noopener">GitHub</a></p>
 </footer>
 
 </body>
