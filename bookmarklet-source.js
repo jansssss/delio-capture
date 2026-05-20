@@ -11,6 +11,7 @@
   if (document.getElementById(UI_ID)) return;
 
   var cancelled = false;
+  var navTimer = null;
 
   // ── UI ──────────────────────────────────────────────────────────────────
   function createUI() {
@@ -22,28 +23,32 @@
       'font-family:"맑은 고딕",sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.3);';
     el.innerHTML =
       '<div style="font-size:18px;font-weight:700;color:#1a56db;margin-bottom:12px">📸 캡처 진행 중</div>' +
-      '<div id="dc-status" style="font-size:16px;color:#222;margin-bottom:14px;line-height:1.5">준비 중...</div>' +
-      '<div id="dc-bar-wrap" style="display:none;margin-bottom:14px">' +
+      '<div id="dc-s" style="font-size:16px;color:#222;margin-bottom:14px;line-height:1.6">준비 중...</div>' +
+      '<div id="dc-bw" style="display:none;margin-bottom:14px">' +
         '<div style="background:#e5e7eb;border-radius:8px;height:12px;overflow:hidden">' +
-          '<div id="dc-bar" style="background:#1a56db;height:12px;width:0%;transition:width .4s;border-radius:8px"></div>' +
+          '<div id="dc-b" style="background:#1a56db;height:12px;width:0%;transition:width .4s;border-radius:8px"></div>' +
         '</div>' +
-        '<div id="dc-lbl" style="text-align:center;font-size:14px;color:#555;margin-top:6px"></div>' +
+        '<div id="dc-l" style="text-align:center;font-size:14px;color:#555;margin-top:6px"></div>' +
       '</div>' +
-      '<button id="dc-close" style="width:100%;padding:10px;background:#6b7280;color:#fff;' +
+      '<button id="dc-x" style="width:100%;padding:10px;background:#6b7280;color:#fff;' +
         'border:none;border-radius:8px;cursor:pointer;font-size:15px;font-weight:600">취소</button>';
     document.body.appendChild(el);
-    document.getElementById('dc-close').onclick = function () { cancelled = true; el.remove(); };
+    document.getElementById('dc-x').onclick = function () {
+      cancelled = true;
+      if (navTimer) clearInterval(navTimer);
+      el.remove();
+    };
     return {
-      status: function (t) { document.getElementById('dc-status').innerHTML = t; },
+      status: function (t) { document.getElementById('dc-s').innerHTML = t; },
       progress: function (c, tot) {
-        document.getElementById('dc-bar-wrap').style.display = 'block';
+        document.getElementById('dc-bw').style.display = 'block';
         var p = Math.round(c / tot * 100);
-        document.getElementById('dc-bar').style.width = p + '%';
-        document.getElementById('dc-lbl').textContent = c + ' / ' + tot + ' 페이지 (' + p + '%)';
+        document.getElementById('dc-b').style.width = p + '%';
+        document.getElementById('dc-l').textContent = c + ' / ' + tot + ' 페이지 (' + p + '%)';
       },
       done: function (m) {
-        document.getElementById('dc-status').innerHTML = m;
-        document.getElementById('dc-close').textContent = '닫기';
+        document.getElementById('dc-s').innerHTML = m;
+        document.getElementById('dc-x').textContent = '닫기 (자동 이동 취소)';
       }
     };
   }
@@ -74,10 +79,9 @@
     return max > 0 ? max : null;
   }
 
-  // ── Save ZIP: Desktop first, fallback to auto-download ──────────────────
+  // ── Save ZIP (Desktop first) ─────────────────────────────────────────────
   async function saveZip(zipBlob, coin) {
     var fname = 'delio_' + coin + '_' + new Date().toISOString().slice(0, 10) + '.zip';
-    // showSaveFilePicker opens the save dialog starting at the Desktop
     if (window.showSaveFilePicker) {
       try {
         var handle = await window.showSaveFilePicker({
@@ -90,16 +94,35 @@
         await writable.close();
         return true;
       } catch (e) {
-        if (e.name === 'AbortError') return false; // user cancelled
+        if (e.name === 'AbortError') return false;
       }
     }
-    // Fallback: browser default download
     var url = URL.createObjectURL(zipBlob);
     var a = document.createElement('a');
     a.href = url; a.download = fname;
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
     return true;
+  }
+
+  // ── 완료 후 코인 목록으로 자동 복귀 ────────────────────────────────────────
+  function startReturnCountdown(ui, coin) {
+    var count = 5;
+    ui.done(
+      '✅ <b>' + coin + '</b> 캡처 완료!<br>' +
+      '바탕화면에 파일이 저장되었습니다.<br><br>' +
+      '다른 코인도 저장하려면<br>코인 목록으로 돌아가 다음 코인을 클릭하세요.<br><br>' +
+      '<span id="dc-count" style="font-size:14px;color:#6b7280">' + count + '초 후 코인 목록으로 자동 이동...</span>'
+    );
+    navTimer = setInterval(function () {
+      count--;
+      var el = document.getElementById('dc-count');
+      if (el) el.textContent = count + '초 후 코인 목록으로 자동 이동...';
+      if (count <= 0) {
+        clearInterval(navTimer);
+        history.back();
+      }
+    }, 1000);
   }
 
   // ── Main ─────────────────────────────────────────────────────────────────
@@ -122,13 +145,12 @@
         total = parseInt(prompt('페이지 수를 자동으로 확인하지 못했습니다.\n총 몇 페이지인지 숫자만 입력해 주세요.', '10') || '10', 10);
       }
 
-      ui.status('총 <b>' + total + '페이지</b> 캡처를 시작합니다.<br><small>잠시 기다려 주세요!</small>');
+      ui.status('총 <b>' + total + '페이지</b> 캡처 시작!<br><small>잠시 기다려 주세요</small>');
       ui.progress(0, total);
 
       var zip = new JSZip();
       var folder = zip.folder(coin + '_captures');
 
-      // Hidden iframe (same-origin — no CORS issues)
       var iframe = document.createElement('iframe');
       iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1440px;height:900px;border:none;';
       document.body.appendChild(iframe);
@@ -142,7 +164,6 @@
           iframe.src = BASE_URL + '?coinType=' + coin + '&page=' + pg;
         });
 
-        // Wait for table
         await new Promise(function (resolve) {
           var t0 = Date.now();
           (function check() {
@@ -157,12 +178,12 @@
           useCORS: true, scale: 1, logging: false, width: 1440, windowWidth: 1440
         });
         var blob = await new Promise(function (r) { canvas.toBlob(r, 'image/png'); });
-        var buf = await blob.arrayBuffer();
-        folder.file(coin + '_page_' + String(pg + 1).padStart(3, '0') + '.png', buf);
+        folder.file(coin + '_page_' + String(pg + 1).padStart(3, '0') + '.png', await blob.arrayBuffer());
         ui.progress(pg + 1, total);
       }
 
       iframe.remove();
+
       if (cancelled) { ui.done('취소되었습니다.'); return; }
 
       ui.status('파일 저장 중...');
@@ -170,7 +191,7 @@
       var saved = await saveZip(zipBlob, coin);
 
       if (saved) {
-        ui.done('✅ 완료!<br>바탕화면에 <b>' + coin + ' 파일</b>이 저장되었습니다.');
+        startReturnCountdown(ui, coin);
       } else {
         ui.done('저장이 취소되었습니다.');
       }
