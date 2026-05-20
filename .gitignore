@@ -1,0 +1,6 @@
+captures/
+*.png
+*.zip
+__pycache__/
+*.pyc
+.DS_Store
