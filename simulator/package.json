@@ -1,0 +1,12 @@
+{
+  "name": "delio-capture-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "server": "node mock-server.js",
+    "test": "node test-bookmarklet.js"
+  },
+  "dependencies": {
+    "playwright": "^1.60.0"
+  }
+}
