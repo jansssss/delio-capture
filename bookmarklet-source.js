@@ -168,22 +168,20 @@
           pageHtml = pageHtml.replace(/(<head[^>]*>)/i, '$1<base href="https://deliobt.kr/">');
         }
 
-        var blobUrl = URL.createObjectURL(new Blob([pageHtml], { type: 'text/html' }));
         await new Promise(function (resolve) {
           iframe.onload = resolve;
-          iframe.src = blobUrl;
+          iframe.srcdoc = pageHtml;
         });
         await new Promise(function (r) { setTimeout(r, 600); });
 
         if (!iframe.contentDocument || !iframe.contentDocument.body)
-          throw new Error('iframe 문서를 읽을 수 없습니다. 로그인 세션을 확인하거나 페이지를 새로고침 후 다시 시도하세요.');
+          throw new Error('페이지 렌더링 실패. 콘솔에서 오류를 확인하세요.');
 
         var canvas = await html2canvas(iframe.contentDocument.body, {
           useCORS: true, scale: 1, logging: false, width: 1440, windowWidth: 1440
         });
         var blob = await new Promise(function (r) { canvas.toBlob(r, 'image/png'); });
         folder.file(coin + '_page_' + String(pg + 1).padStart(3, '0') + '.png', await blob.arrayBuffer());
-        URL.revokeObjectURL(blobUrl);
         ui.progress(pg + 1, total);
       }
 
