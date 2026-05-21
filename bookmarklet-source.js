@@ -159,26 +159,31 @@
         if (cancelled) break;
         ui.status((pg + 1) + '번째 페이지 캡처 중...<br><small>창을 닫지 마세요!</small>');
 
+        var resp = await fetch(BASE_URL + '?coinType=' + coin + '&page=' + pg, { credentials: 'include' });
+        if (!resp.ok) throw new Error('페이지 요청 실패 (HTTP ' + resp.status + ')');
+        var pageHtml = await resp.text();
+
+        // <base> 태그를 주입해 상대 경로 CSS/이미지가 원본 도메인에서 로드되도록 함
+        if (!pageHtml.match(/<base\s/i)) {
+          pageHtml = pageHtml.replace(/(<head[^>]*>)/i, '$1<base href="https://deliobt.kr/">');
+        }
+
+        var blobUrl = URL.createObjectURL(new Blob([pageHtml], { type: 'text/html' }));
         await new Promise(function (resolve) {
           iframe.onload = resolve;
-          iframe.src = BASE_URL + '?coinType=' + coin + '&page=' + pg;
+          iframe.src = blobUrl;
         });
+        await new Promise(function (r) { setTimeout(r, 600); });
 
-        await new Promise(function (resolve) {
-          var t0 = Date.now();
-          (function check() {
-            try { if (iframe.contentDocument.querySelector('table')) return resolve(); } catch (e) { return resolve(); }
-            if (Date.now() - t0 > 10000) return resolve();
-            setTimeout(check, 300);
-          })();
-        });
-        await new Promise(function (r) { setTimeout(r, 900); });
+        if (!iframe.contentDocument || !iframe.contentDocument.body)
+          throw new Error('iframe 문서를 읽을 수 없습니다. 로그인 세션을 확인하거나 페이지를 새로고침 후 다시 시도하세요.');
 
         var canvas = await html2canvas(iframe.contentDocument.body, {
           useCORS: true, scale: 1, logging: false, width: 1440, windowWidth: 1440
         });
         var blob = await new Promise(function (r) { canvas.toBlob(r, 'image/png'); });
         folder.file(coin + '_page_' + String(pg + 1).padStart(3, '0') + '.png', await blob.arrayBuffer());
+        URL.revokeObjectURL(blobUrl);
         ui.progress(pg + 1, total);
       }
 
