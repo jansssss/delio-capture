@@ -159,20 +159,40 @@
         if (cancelled) break;
         ui.status((pg + 1) + '번째 페이지 캡처 중...<br><small>창을 닫지 마세요!</small>');
 
+        var pagePath = '/transaction?coinType=' + coin + '&page=' + pg;
         var resp = await fetch(BASE_URL + '?coinType=' + coin + '&page=' + pg, { credentials: 'include' });
         if (!resp.ok) throw new Error('페이지 요청 실패 (HTTP ' + resp.status + ')');
         var pageHtml = await resp.text();
 
-        // <base> 태그를 주입해 상대 경로 CSS/이미지가 원본 도메인에서 로드되도록 함
+        // <head> 최상단에 두 가지를 주입한다.
+        //   1. <base>: 상대 경로 CSS/이미지가 원본 도메인에서 로드되도록.
+        //   2. location/URLSearchParams 오버라이드: srcdoc 의 location.search 는 비어있어
+        //      델리오 SPA 가 coinType 을 찾지 못하고 '/'로 리다이렉트한 뒤 X-Frame-Options 에
+        //      막혀 iframe 이 깨진다. replaceState 는 about:srcdoc 에서 SecurityError 라
+        //      Location.prototype.search/href 와 URLSearchParams 생성자를 가짜로 덮어쓴다.
+        var fakeSearch = '?coinType=' + coin + '&page=' + pg;
+        var fakeHref = 'https://deliobt.kr' + pagePath;
+        var override =
+          '<script>(function(){var s=' + JSON.stringify(fakeSearch) + ',h=' + JSON.stringify(fakeHref) + ';' +
+          'try{var p=Object.getPrototypeOf(location);' +
+          'Object.defineProperty(p,"search",{get:function(){return s;},configurable:true});' +
+          'Object.defineProperty(p,"href",{get:function(){return h;},set:function(){},configurable:true});' +
+          'Object.defineProperty(p,"pathname",{get:function(){return "/transaction";},configurable:true});' +
+          '}catch(e){console.warn("[Delio Capture] location override failed",e);}' +
+          'try{var O=window.URLSearchParams;function P(i){if(i==null||i===""||i==="?")i=s;return new O(i);}' +
+          'P.prototype=O.prototype;window.URLSearchParams=P;}catch(e){}' +
+          'try{location.assign=function(){};location.replace=function(){};}catch(e){}' +
+          '})();</script>';
+        var headInject = '<base href="https://deliobt.kr/">' + override;
         if (!pageHtml.match(/<base\s/i)) {
-          pageHtml = pageHtml.replace(/(<head[^>]*>)/i, '$1<base href="https://deliobt.kr/">');
+          pageHtml = pageHtml.replace(/(<head[^>]*>)/i, '$1' + headInject);
         }
 
         await new Promise(function (resolve) {
           iframe.onload = resolve;
           iframe.srcdoc = pageHtml;
         });
-        await new Promise(function (r) { setTimeout(r, 600); });
+        await new Promise(function (r) { setTimeout(r, 1500); });
 
         if (!iframe.contentDocument || !iframe.contentDocument.body)
           throw new Error('페이지 렌더링 실패. 콘솔에서 오류를 확인하세요.');

@@ -31,12 +31,24 @@ function makePage(pageIdx) {
     pager += `<button class="page-btn${p === pageIdx + 1 ? ' active' : ''}">${p}</button>`;
   }
 
+  // Mimic deliobt.kr's transaction.js client-side check that triggered the bug:
+  // if location.search has no coinType, it logs the message and redirects to home.
+  // Real-site console showed: "coinType 파라미터가 없습니다. 홈으로 리다이렉트합니다."
   return `<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
   <title>Delio - ETH 거래내역</title>
   <link rel="stylesheet" href="/style.css">
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      if (!params.get('coinType')) {
+        console.log('coinType 파라미터가 없습니다. 홈으로 리다이렉트합니다.');
+        window.location.href = '/';
+      }
+    })();
+  </script>
 </head>
 <body>
   <div class="container">

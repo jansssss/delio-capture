@@ -191,8 +191,18 @@ function loadBookmarkletSource() {
 
   await browser.close();
 
-  const success = result.status === 'done' && zipOk;
+  // Verify the SPA's redirect-on-missing-coinType path was NOT taken. If we see this
+  // log line, html2canvas captured the (same-origin) 404/home page instead of the real
+  // transaction page — silently producing a passing zip full of error-page PNGs.
+  const redirectLogged = logs.some((l) => l.includes('coinType 파라미터가 없습니다'));
+  const got404 = logs.some((l) => l.includes('404') && l.toLowerCase().includes('failed to load'));
+
+  const success = result.status === 'done' && zipOk && !redirectLogged && !got404;
   console.log(`\n========== FINAL ==========`);
+  console.log(`uiDone:        ${result.status === 'done'}`);
+  console.log(`zipOk:         ${zipOk}`);
+  console.log(`noRedirectLog: ${!redirectLogged}`);
+  console.log(`no404Fetch:    ${!got404}`);
   console.log(`PASS: ${success}`);
   process.exit(success ? 0 : 1);
 })();
